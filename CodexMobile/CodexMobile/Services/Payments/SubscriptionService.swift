@@ -54,11 +54,12 @@ final class SubscriptionService {
     private var isBootstrapping = false
     private var hasCachedOptimisticAccess = false
 
-    private(set) var bootstrapState: SubscriptionBootstrapState = .idle
+    private(set) var bootstrapState: SubscriptionBootstrapState = .ready
     private(set) var customerInfo: CustomerInfo?
     private(set) var currentOffering: Offering?
     private(set) var packageOptions: [SubscriptionPackageOption] = []
-    private(set) var hasProAccess = false
+    // Hardcoded unlock: paywall/IAP bypassed for local builds.
+    private(set) var hasProAccess = true
     private(set) var latestPurchaseDate: Date?
     private(set) var willRenew = false
     private(set) var managementURL: URL?
@@ -79,35 +80,12 @@ final class SubscriptionService {
 
     // Bootstraps subscription state once at launch or from the recovery retry action.
     func bootstrap() async {
-        guard !isBootstrapping else {
-            return
-        }
-
-        isBootstrapping = true
-        defer { isBootstrapping = false }
-        startCustomerInfoObserverIfConfigured()
-        let hadOptimisticAccess = hasCachedOptimisticAccess
-        if !hadOptimisticAccess {
-            bootstrapState = .loading
-        }
-        isLoading = true
-        lastErrorMessage = nil
-
-        guard Purchases.isConfigured else {
-            if !hadOptimisticAccess {
-                bootstrapState = .failed
-                lastErrorMessage = "Subscriptions are unavailable right now."
-            }
-            isLoading = false
-            return
-        }
-
-        async let offeringsTask = refreshOfferings(updatesLastError: !hadOptimisticAccess)
-        await refreshCustomerInfo(updatesLastError: !hadOptimisticAccess)
-
-        bootstrapState = (customerInfo != nil || hadOptimisticAccess) ? .ready : .failed
-        await offeringsTask
+        // Hardcoded unlock: skip RevenueCat bootstrap entirely and stay in the ready state.
+        bootstrapState = .ready
+        hasProAccess = true
+        hasCachedOptimisticAccess = true
         isLoading = false
+        lastErrorMessage = nil
     }
 
     // Refreshes the current subscription state without re-entering the blocking bootstrap UI.
@@ -255,8 +233,9 @@ private extension SubscriptionService {
     func applyCustomerInfo(_ info: CustomerInfo) {
         customerInfo = info
         let entitlement = info.entitlements.all[AppEnvironment.revenueCatEntitlementName]
-        hasProAccess = entitlement?.isActive == true
-        hasCachedOptimisticAccess = hasProAccess
+        // Hardcoded unlock: ignore RevenueCat entitlement and always grant Pro.
+        hasProAccess = true
+        hasCachedOptimisticAccess = true
         latestPurchaseDate = entitlement?.latestPurchaseDate
         willRenew = entitlement?.willRenew == true
         managementURL = info.managementURL
@@ -271,12 +250,13 @@ private extension SubscriptionService {
             return
         }
 
-        hasProAccess = cachedState.hasProAccess
-        hasCachedOptimisticAccess = cachedState.hasProAccess
+        // Hardcoded unlock: ignore any cached subscription state.
+        hasProAccess = true
+        hasCachedOptimisticAccess = true
         latestPurchaseDate = cachedState.latestPurchaseDate
         willRenew = cachedState.willRenew
         managementURL = cachedState.managementURLString.flatMap(URL.init(string:))
-        bootstrapState = cachedState.hasProAccess ? .ready : .idle
+        bootstrapState = .ready
     }
 
     func persistCachedState() {
