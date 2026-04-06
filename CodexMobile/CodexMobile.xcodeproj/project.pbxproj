@@ -380,8 +380,8 @@
 			mainGroup = C09A76A52F4B8D7B003B3F3A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C0DED3342F5E39DC0021A8E8 /* XCLocalSwiftPackageReference "Packages/textual" */,
 				C04E21492F71D34100AA3193 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+				C51AB9E92F841AEF0039BEBC /* XCRemoteSwiftPackageReference "textual" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C09A76AF2F4B8D7B003B3F3A /* Products */;
@@ -914,13 +914,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		C0DED3342F5E39DC0021A8E8 /* XCLocalSwiftPackageReference "Packages/textual" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/textual;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		C04E21492F71D34100AA3193 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -928,6 +921,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 5.66.0;
+			};
+		};
+		C51AB9E92F841AEF0039BEBC /* XCRemoteSwiftPackageReference "textual" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/finngaida/textual.git";
+			requirement = {
+				kind = revision;
+				revision = fac78e85508be3b94114ac2428eb2ca68248d96d;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
