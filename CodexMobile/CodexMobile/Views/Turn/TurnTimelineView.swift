@@ -46,6 +46,7 @@ struct TurnTimelineView<EmptyState: View, Composer: View>: View {
 
     @State private var visibleTailCount: Int = pageSize
     @State private var viewportHeight: CGFloat = 0
+    @State private var scrollBottomGeometry = ScrollBottomGeometry()
     // Cached per-render artifacts to avoid O(n) recomputation inside the body.
     @State private var cachedBlockInfoByMessageID: [String: AssistantBlockAccessoryState] = [:]
     @State private var cachedNewestStreamingMessageID: String? = nil
@@ -106,56 +107,49 @@ struct TurnTimelineView<EmptyState: View, Composer: View>: View {
                             .id(scrollBottomAnchorID)
                             .allowsHitTesting(false)
                             .padding(.bottom, 12)
+                            .background {
+                                GeometryReader { geometry in
+                                    Color.clear.preference(
+                                        key: TurnTimelineScrollMetricsPreferenceKey.self,
+                                        value: .init(
+                                            bottomAnchorMaxY: geometry.frame(
+                                                in: .named(TurnTimelineScrollCoordinateSpace.name)
+                                            ).maxY
+                                        )
+                                    )
+                                }
+                            }
+                    }
+                    .background {
+                        GeometryReader { geometry in
+                            Color.clear.preference(
+                                key: TurnTimelineScrollMetricsPreferenceKey.self,
+                                value: .init(contentHeight: geometry.size.height)
+                            )
+                        }
                     }
                 }
                 .accessibilityIdentifier("turn.timeline.scrollview")
                 .background(Color(.systemBackground))
                 .defaultScrollAnchor(.bottom)
+                .coordinateSpace(name: TurnTimelineScrollCoordinateSpace.name)
                 .scrollDismissesKeyboard(.interactively)
                 .simultaneousGesture(
                     TapGesture().onEnded {
                         onTapOutsideComposer()
                     }
                 )
-                // Track real scroll phases instead of layering a competing drag gesture on top.
-                .onScrollPhaseChange { oldPhase, newPhase in
-                    handleScrollPhaseChange(from: oldPhase, to: newPhase)
+                .simultaneousGesture(scrollTrackingGesture)
+                .background {
+                    GeometryReader { geometry in
+                        Color.clear.preference(
+                            key: TurnTimelineScrollMetricsPreferenceKey.self,
+                            value: .init(viewportHeight: geometry.size.height)
+                        )
+                    }
                 }
-                .onScrollGeometryChange(for: ScrollBottomGeometry.self) { geometry in
-                    let vh = geometry.visibleRect.height
-                    let isAtBottom: Bool
-                    if geometry.contentSize.height <= 0 || vh <= 0 {
-                        isAtBottom = true
-                    } else if geometry.contentSize.height <= vh {
-                        isAtBottom = true
-                    } else {
-                        isAtBottom = geometry.visibleRect.maxY
-                            >= geometry.contentSize.height - TurnScrollStateTracker.bottomThreshold
-                    }
-                    return ScrollBottomGeometry(
-                        isAtBottom: isAtBottom,
-                        viewportHeight: vh,
-                        contentHeight: geometry.contentSize.height
-                    )
-                } action: { old, new in
-                    if new.viewportHeight > 0,
-                       abs(new.viewportHeight - old.viewportHeight) > 2 {
-                        viewportHeight = new.viewportHeight
-                        performInitialRecoverySnapIfNeeded(using: proxy)
-                        if shouldPinTimelineToBottomDuringGeometryChange {
-                            scheduleFollowBottomScroll(using: proxy)
-                        }
-                    }
-                    if TurnScrollStateTracker.shouldCorrectBottomAfterContentHeightChange(
-                        previousHeight: old.contentHeight,
-                        newHeight: new.contentHeight,
-                        isPinnedToBottom: shouldPinTimelineToBottomDuringGeometryChange
-                    ) {
-                        scheduleFollowBottomScroll(using: proxy)
-                    }
-                    if new.isAtBottom != old.isAtBottom {
-                        handleScrolledToBottomChanged(new.isAtBottom)
-                    }
+                .onPreferenceChange(TurnTimelineScrollMetricsPreferenceKey.self) { metrics in
+                    handleScrollMetricsChange(metrics, using: proxy)
                 }
                 // Timeline mutations still drive block-info refresh and assistant anchoring,
                 // but geometry decides when follow-bottom should actually fire.
@@ -390,6 +384,16 @@ struct TurnTimelineView<EmptyState: View, Composer: View>: View {
             }
     }
 
+    private var scrollTrackingGesture: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .onChanged { _ in
+                handleUserScrollDragChanged()
+            }
+            .onEnded { _ in
+                handleUserScrollDragEnded()
+            }
+    }
+
     private var shouldShowScrollToLatestButton: Bool {
         TurnScrollStateTracker.shouldShowScrollToLatestButton(
             messageCount: messages.count,
@@ -450,6 +454,36 @@ struct TurnTimelineView<EmptyState: View, Composer: View>: View {
         }
     }
 
+    private func handleScrollMetricsChange(
+        _ metrics: TurnTimelineScrollMetrics,
+        using proxy: ScrollViewProxy
+    ) {
+        guard let next = ScrollBottomGeometry(metrics: metrics) else { return }
+        let old = scrollBottomGeometry
+        guard next != old else { return }
+
+        scrollBottomGeometry = next
+
+        if next.viewportHeight > 0,
+           abs(next.viewportHeight - old.viewportHeight) > 2 {
+            viewportHeight = next.viewportHeight
+            performInitialRecoverySnapIfNeeded(using: proxy)
+            if shouldPinTimelineToBottomDuringGeometryChange {
+                scheduleFollowBottomScroll(using: proxy)
+            }
+        }
+        if TurnScrollStateTracker.shouldCorrectBottomAfterContentHeightChange(
+            previousHeight: old.contentHeight,
+            newHeight: next.contentHeight,
+            isPinnedToBottom: shouldPinTimelineToBottomDuringGeometryChange
+        ) {
+            scheduleFollowBottomScroll(using: proxy)
+        }
+        if next.isAtBottom != old.isAtBottom {
+            handleScrolledToBottomChanged(next.isAtBottom)
+        }
+    }
+
     // Gives user drag intent precedence over follow-bottom so streaming never wrestles the scroll gesture.
     private func handleUserScrollDragChanged() {
         guard !isUserDraggingScroll else { return }
@@ -468,28 +502,6 @@ struct TurnTimelineView<EmptyState: View, Composer: View>: View {
             currentMode: autoScrollMode,
             isScrolledToBottom: isScrolledToBottom
         )
-    }
-
-    // Mirrors user-driven scroll phases without pausing auto-follow during programmatic animations.
-    private func handleScrollPhaseChange(from oldPhase: ScrollPhase, to newPhase: ScrollPhase) {
-        switch newPhase {
-        case .tracking, .interacting:
-            handleUserScrollDragChanged()
-        case .decelerating:
-            let wasUserTouchingScroll = oldPhase == .tracking || oldPhase == .interacting
-            if wasUserTouchingScroll {
-                handleUserScrollDragEnded()
-            }
-        case .idle:
-            let wasUserTouchingScroll = oldPhase == .tracking || oldPhase == .interacting
-            if wasUserTouchingScroll {
-                handleUserScrollDragEnded()
-            }
-        case .animating:
-            return
-        @unknown default:
-            return
-        }
     }
 
     // Repairs the initial white/blank viewport race by doing a deferred snap, then
@@ -786,6 +798,78 @@ private struct ScrollBottomGeometry: Equatable {
     let isAtBottom: Bool
     let viewportHeight: CGFloat
     let contentHeight: CGFloat
+
+    init(
+        isAtBottom: Bool = true,
+        viewportHeight: CGFloat = 0,
+        contentHeight: CGFloat = 0
+    ) {
+        self.isAtBottom = isAtBottom
+        self.viewportHeight = viewportHeight
+        self.contentHeight = contentHeight
+    }
+
+    init?(metrics: TurnTimelineScrollMetrics) {
+        guard let viewportHeight = metrics.viewportHeight,
+              let contentHeight = metrics.contentHeight else {
+            return nil
+        }
+
+        let isAtBottom: Bool
+        if contentHeight <= 0 || viewportHeight <= 0 {
+            isAtBottom = true
+        } else if contentHeight <= viewportHeight {
+            isAtBottom = true
+        } else if let bottomAnchorMaxY = metrics.bottomAnchorMaxY {
+            isAtBottom = bottomAnchorMaxY
+                <= viewportHeight + TurnScrollStateTracker.bottomThreshold
+        } else {
+            return nil
+        }
+
+        self.init(
+            isAtBottom: isAtBottom,
+            viewportHeight: viewportHeight,
+            contentHeight: contentHeight
+        )
+    }
+}
+
+private struct TurnTimelineScrollMetrics: Equatable {
+    var viewportHeight: CGFloat?
+    var contentHeight: CGFloat?
+    var bottomAnchorMaxY: CGFloat?
+
+    init(
+        viewportHeight: CGFloat? = nil,
+        contentHeight: CGFloat? = nil,
+        bottomAnchorMaxY: CGFloat? = nil
+    ) {
+        self.viewportHeight = viewportHeight
+        self.contentHeight = contentHeight
+        self.bottomAnchorMaxY = bottomAnchorMaxY
+    }
+}
+
+private struct TurnTimelineScrollMetricsPreferenceKey: PreferenceKey {
+    static var defaultValue = TurnTimelineScrollMetrics()
+
+    static func reduce(value: inout TurnTimelineScrollMetrics, nextValue: () -> TurnTimelineScrollMetrics) {
+        let next = nextValue()
+        if let viewportHeight = next.viewportHeight {
+            value.viewportHeight = viewportHeight
+        }
+        if let contentHeight = next.contentHeight {
+            value.contentHeight = contentHeight
+        }
+        if let bottomAnchorMaxY = next.bottomAnchorMaxY {
+            value.bottomAnchorMaxY = bottomAnchorMaxY
+        }
+    }
+}
+
+private enum TurnTimelineScrollCoordinateSpace {
+    static let name = "turn-timeline-scroll"
 }
 
 private struct TurnFloatingButtonPressStyle: ButtonStyle {

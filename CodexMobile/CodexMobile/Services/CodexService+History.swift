@@ -1870,13 +1870,17 @@ extension CodexService {
     }
 
     func decodeHistoryChangeDiff(from changeObject: [String: JSONValue]) -> String {
-        let diff = changeObject["diff"]?.stringValue
-            ?? changeObject["unified_diff"]?.stringValue
-            ?? changeObject["unifiedDiff"]?.stringValue
-            ?? changeObject["patch"]?.stringValue
-            ?? changeObject["delta"]?.stringValue
-            ?? ""
-        return diff.trimmingCharacters(in: .whitespacesAndNewlines)
+        let diffKeys = ["diff", "unified_diff", "unifiedDiff", "patch", "delta"]
+
+        for key in diffKeys {
+            guard let diff = changeObject[key]?.stringValue else { continue }
+            let trimmed = diff.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        return ""
     }
 
     func decodeHistoryChangeInlineTotals(

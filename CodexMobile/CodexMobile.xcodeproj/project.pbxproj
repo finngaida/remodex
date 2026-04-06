@@ -347,6 +347,10 @@
 				C09A76B02F4B8D7B003B3F3A /* CodexMobile */,
 			);
 			name = CodexMobile;
+			packageProductDependencies = (
+				C04E214A2F71D34100AA3193 /* RevenueCat */,
+				C0DED3352F5E39DC0021A8E8 /* Textual */,
+			);
 			productName = CodexMobile;
 			productReference = C09A76AE2F4B8D7B003B3F3A /* CodexMobile.app */;
 			productType = "com.apple.product-type.application";
@@ -376,7 +380,7 @@
 			mainGroup = C09A76A52F4B8D7B003B3F3A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C0DED3342F5E39DC0021A8E8 /* XCRemoteSwiftPackageReference "textual" */,
+				C0DED3342F5E39DC0021A8E8 /* XCLocalSwiftPackageReference "Packages/textual" */,
 				C04E21492F71D34100AA3193 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -510,7 +514,7 @@
 				DEVELOPMENT_TEAM = HR24WHR326;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.CodexMobileTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -528,7 +532,7 @@
 				DEVELOPMENT_TEAM = HR24WHR326;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.CodexMobileUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -546,7 +550,7 @@
 				DEVELOPMENT_TEAM = HR24WHR326;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.CodexMobileUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -566,7 +570,7 @@
 				DEVELOPMENT_TEAM = HR24WHR326;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.emanueledipietro.CodexMobileTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -630,7 +634,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -688,7 +692,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -910,6 +914,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		C0DED3342F5E39DC0021A8E8 /* XCLocalSwiftPackageReference "Packages/textual" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/textual;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		C04E21492F71D34100AA3193 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -917,14 +928,6 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 5.66.0;
-			};
-		};
-		C0DED3342F5E39DC0021A8E8 /* XCRemoteSwiftPackageReference "textual" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/gonzalezreal/textual.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.3.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -937,7 +940,6 @@
 		};
 		C0DED3352F5E39DC0021A8E8 /* Textual */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C0DED3342F5E39DC0021A8E8 /* XCRemoteSwiftPackageReference "textual" */;
 			productName = Textual;
 		};
 /* End XCSwiftPackageProductDependency section */

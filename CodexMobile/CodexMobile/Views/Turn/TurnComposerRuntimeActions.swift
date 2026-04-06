@@ -6,11 +6,12 @@
 
 import Foundation
 
+@MainActor
 struct TurnComposerRuntimeActions {
-    let selectModel: (String) -> Void
-    let selectAutomaticReasoning: () -> Void
-    let selectReasoning: (String) -> Void
-    let selectServiceTier: (CodexServiceTier?) -> Void
+    let selectModel: @MainActor (String) -> Void
+    let selectAutomaticReasoning: @MainActor () -> Void
+    let selectReasoning: @MainActor (String) -> Void
+    let selectServiceTier: @MainActor (CodexServiceTier?) -> Void
 
     static func resolve(codex: CodexService) -> TurnComposerRuntimeActions {
         TurnComposerRuntimeActions(
